@@ -1,10 +1,10 @@
-# This code is from @Henryjean <https://github.com/Henryjean/Rogers-Cardigans/blob/master/MrRogers.R>
+# The original code is from @Henryjean <https://github.com/Henryjean/Rogers-Cardigans/blob/master/MrRogers.R>
 
+# Some slight modifcations by @jhollist to create the cardigan_colors 
+# data frame
 # Load packages
 library(rvest)
-library(tidyverse)
-library(ggplot2)
-library(ggthemes)
+library(dplyr)
 
 #Point to the blog post that hosted the data
 url <- "https://web.archive.org/web/20110525014454/http://neighborhoodarchive.blogspot.com/2011/05/sweater-colors.html"
@@ -54,41 +54,14 @@ df$year <- ifelse(as.numeric(as.character(df$episodenumbers)) >= 1736 & as.numer
 df$year <- ifelse(as.numeric(as.character(df$episodenumbers)) >= 1751 & as.numeric(as.character(df$episodenumbers))  <=  1760, 2000, df$year)
 df$year <- ifelse(as.numeric(as.character(df$episodenumbers)) >= 1761 & as.numeric(as.character(df$episodenumbers))  <=  1765, 2001, df$year)
 
-#Store the color hex codes for each episode
-cn <- levels(df$colorcodes)
-
-#Plot the color of each sweater worn, grouped by year
-na.omit(df) %>% group_by(year) %>% ggplot(aes(x=year)) + geom_bar(aes(fill = factor(colorcodes)), width =.85) + 
-  scale_fill_manual(values = cn) + theme_minimal() + 
-  labs(fill = "", x= "", 
-       title = "The Colors of Mister Rogers Sweaters", 
-       subtitle = "1979 - 2001", 
-       caption = "Source: neighborhoodarchive.com") +
-  guides(fill=guide_legend(ncol=2)) + theme(legend.position = "none") + 
-  geom_hline(yintercept=seq(1, 20, 1), col="white", lwd=.65) 
-
-#Plot the color of every sweater in order that they appear (1 will be omitted since Rogers wore two sweaters in one episode)
-na.omit(df) %>% ggplot(aes(x=episodenumbers)) + geom_bar(aes(fill = factor(colorcodes))) + 
-  scale_fill_manual(values = cn) + theme_minimal() + 
-  labs(fill = "", x= "", 
-       title = "Mister Rogers' Cardigans of Many Colors", 
-       subtitle = " ", 
-       caption = "") +
-  guides(fill=guide_legend(ncol=2)) + 
-  scale_x_discrete(breaks = c(1466, 1761),
-                   labels = c("1979", "2001")) + 
-  theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) + 
-  theme(legend.position = "none") + ylim(0,1)
+# Kill factors
+df$episodenumbers <- as.numeric(as.character(df$episodenumbers))
+df$colorcodes <- as.character(df$colorcodes)
+cardigan_colors <- df %>%
+  filter(!is.na(df$year))
 
 #Count the number of times each color sweater appeared
-df <- df %>% group_by(colorcodes) %>% mutate(count = n())
-
-#Plot the sweater colors that appeared most often 
-na.omit(df) %>% ggplot(aes(reorder(colorcodes, -count), fill = colorcodes)) + geom_bar(width = .50) + 
-  scale_fill_manual(values = cn) + theme_minimal() + labs(y = " ", x = " ", 
-                                                          title = "Mister Rogers' Cardigans of Many Colors",
-                                                          subtitle = "Number of episodes Rogers wore each color sweater (1979 - 2001)",
-                                                          caption = "Source: neighborhoodarchive.com") + 
-  theme(legend.position = "none") + 
-  geom_hline(yintercept=seq(0, 75, 5), col="white", lwd=.45)  + 
-  theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) 
+cardigan_colors_frq <- df %>% 
+  group_by(colorcodes) %>% 
+  mutate(count = n())%>%
+  data.frame
